@@ -166,17 +166,25 @@ export default class RNSketchCanvas extends React.Component {
   }
 
   save() {
-    console.log('YEAH')
-    if (this.props.savePreference) {
-      const p = this.props.savePreference()
-      this._sketchCanvas.save(p.imageType, p.transparent, p.folder ? p.folder : '', p.filename, p.includeImage !== false, p.includeText !== false, p.cropToImageSize || false)
-    } else {
-      const date = new Date()
-      this._sketchCanvas.save('png', false, '',
-        date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + ('0' + date.getDate()).slice(-2) + ' ' + ('0' + date.getHours()).slice(-2) + '-' + ('0' + date.getMinutes()).slice(-2) + '-' + ('0' + date.getSeconds()).slice(-2),
-        true, true, false)
-    }
-    this.setState({ shouldSave: false });
+    const date = new Date();
+    const fileName = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}.png`;
+
+    this._sketchCanvas.save('png', false, '', fileName, true, true, false, async (path) => {
+      const isStoragePermissionAuthorized = await requestPermissions(
+        this.props.permissionDialogTitle,
+        this.props.permissionDialogMessage,
+      );
+
+      if (isStoragePermissionAuthorized) {
+        MediaStore.saveToGallery({
+          mediaType: 'photo',
+          path,
+          album: 'challenz',
+        });
+
+        this.setState({ shouldSave: false });
+      }
+    });
   }
 
   nextStrokeWidth() {
